@@ -1,7 +1,17 @@
 import express from "express";
 
+const PORT = 8080;
+
 const app = express();
 
-app.listen(8080, () => {
-  console.log("Server is running on port 8080");
+app.use('/app', express.static('./src/app'));
+app.get('/healthz', handlerReadiness);
+
+function handlerReadiness(req: express.Request, res: express.Response) {
+  res.set('Content-Type', 'text/plain; charset=utf-8');
+  res.status(200).send('OK');
+}
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
