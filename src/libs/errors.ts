@@ -60,3 +60,17 @@ export class ValidationError extends HTTPError {
     this.name = 'ValidationError';
   }
 }
+
+export abstract class AuthError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AuthError';
+  }
+}
+
+
+export class UserNotAuthenticatedError extends AuthError {
+  constructor(message: string) {
+    super(message);
+  }
+}
