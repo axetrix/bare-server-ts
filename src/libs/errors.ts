@@ -74,3 +74,9 @@ export class UserNotAuthenticatedError extends AuthError {
     super(message);
   }
 }
+
+export class AuthHeaderError extends AuthError {
+  constructor(message: string) {
+    super(message);
+  }
+}

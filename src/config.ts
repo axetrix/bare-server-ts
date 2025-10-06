@@ -31,6 +31,7 @@ type APIConfig = {
 
 type AppConfig = {
   platform: string;
+  secret: string;
 };
 
 type Config = {
@@ -54,5 +55,6 @@ export const config: Config = {
   },
   app: {
     platform: envOrThrow('APP_PLATFORM'),
+    secret: envOrThrow('APP_SECRET'),
   }
 };

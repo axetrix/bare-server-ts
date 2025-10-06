@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import type { Request } from "express";
+import { describe, it, expect, beforeAll, vi } from "vitest";
 
 import { makeJWT, validateJWT } from "./auth";
-import { hashPassword, checkPasswordHash } from "./auth";
+import { hashPassword, checkPasswordHash, getBearerToken } from "./auth";
 
-import { UserNotAuthenticatedError } from "./errors";
+import { UserNotAuthenticatedError, AuthHeaderError } from "./errors";
 
 describe("Password Hashing", () => {
   const password1 = "password1!";
@@ -68,5 +69,61 @@ describe("JWT Validation", () => {
     const validToken = await makeJWT("", 200, secret);
 
     await expect(validateJWT(validToken, secret)).rejects.toThrowError(UserNotAuthenticatedError);
+  });
+});
+
+describe("getBearerToken", () => {
+  it("returns the token if header is valid", () => {
+    const getMock = vi.fn((key: string) =>
+      key === "Authorization" ? "Bearer my-token" : null
+    );
+
+    const req = {
+      get: getMock
+    } as unknown as Request;
+
+    const token = getBearerToken(req);
+    expect(token).toBe("my-token");
+    expect(getMock).toHaveBeenCalledTimes(1);
+    expect(getMock).toHaveBeenCalledWith("Authorization");
+  });
+
+  it("returns the token if header with many whithespaces is valid", () => {
+    const getMock = vi.fn((key: string) =>
+      key === "Authorization" ? "Bearer    my-token1" : null
+    );
+
+    const req = {
+      get: getMock
+    } as unknown as Request;
+
+    const token = getBearerToken(req);
+    expect(token).toBe("my-token1");
+    expect(getMock).toHaveBeenCalledTimes(1);
+    expect(getMock).toHaveBeenCalledWith("Authorization");
+  });
+
+  it("throws if Authorization header is missing", () => {
+    const getMock = vi.fn(() => null);
+
+    const req = {
+      get: getMock
+    } as unknown as Request;
+
+    expect(() => getBearerToken(req)).toThrowError("No authorization header");
+    expect(getMock).toHaveBeenCalledTimes(1);
+    expect(getMock).toHaveBeenCalledWith("Authorization");
+  });
+
+  it("throws if token type is not Bearer", () => {
+    const getMock = vi.fn(() => "Basic my-token");
+
+    const req = {
+      get: getMock
+    } as unknown as Request;
+
+    expect(() => getBearerToken(req)).toThrowError("Invalid token type");
+    expect(getMock).toHaveBeenCalledTimes(1);
+    expect(getMock).toHaveBeenCalledWith("Authorization");
   });
 });

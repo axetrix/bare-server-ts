@@ -1,8 +1,9 @@
+import type { Request } from "express";
 import { hash, verify } from "argon2";
-import { sign, verify as verifyJWT } from "jsonwebtoken";
+import jsonwebtoken from "jsonwebtoken";
 import type { JwtPayload } from "jsonwebtoken";
 
-import { UserNotAuthenticatedError } from "./errors";
+import { UserNotAuthenticatedError, AuthHeaderError } from "./errors.js";
 
 type Payload = Pick<JwtPayload, "iss" | "sub" | "iat" | "exp">;
 
@@ -35,7 +36,7 @@ export async function makeJWT(
     exp: Math.floor(Date.now() / 1000) + expiresIn,
   } satisfies Payload;
 
-  return sign(payload, secret, { algorithm: "HS256" });
+  return jsonwebtoken.sign(payload, secret, { algorithm: "HS256" });
 }
 
 export async function validateJWT(
@@ -45,7 +46,7 @@ export async function validateJWT(
   let decoded: Payload;
 
   try {
-    decoded = verifyJWT(tokenString, secret, {
+    decoded = jsonwebtoken.verify(tokenString, secret, {
       algorithms: ["HS256"],
     }) as JwtPayload;
   } catch (error) {
@@ -61,4 +62,20 @@ export async function validateJWT(
   }
 
   return decoded.sub;
+}
+
+export function getBearerToken(req: Request): string {
+  const authHeader = req.get("Authorization");
+
+  if (!authHeader) {
+    throw new AuthHeaderError("No authorization header");
+  }
+
+  const [type, token] = authHeader.split(/\s+/);
+
+  if (type !== "Bearer") {
+    throw new AuthHeaderError("Invalid token type");
+  }
+
+  return token;
 }

@@ -1,24 +1,37 @@
 import { Request, Response } from "express";
-import { InternalServerError, BadRequestError, NotFoundError } from "../libs/errors.js";
+import { InternalServerError, BadRequestError, NotFoundError, UnauthorizedError } from "../libs/errors.js";
 
 import { createChirp, getChirps, getChirpById } from "../libs/db/queries/chirps.js";
 
 import { respondWithJSON } from "../libs/json.js";
+import { getBearerToken, validateJWT } from "../libs/auth.js";
+import { config } from "../config.js";
 
 const DISABLED_WORDS = ["kerfuffle", "sharbert", "fornax"];
 
 export async function handleChirpCreate(req: Request, res: Response) {
   type Params = {
     body: string;
-    userId: string;
   };
 
   const data: Params = req.body;
 
-  if (!data.body || !data.userId) {
+  let userId;
+
+  try {
+    userId = await validateJWT(getBearerToken(req), config.app.secret);
+  } catch (error) {
+    throw new UnauthorizedError("Invalid token");
+  }
+
+  if (!data.body) {
     throw new BadRequestError(
-      `Provided data is invalid, missing body or userId`,
+      `Provided data is invalid. Missing body`,
     );
+  }
+
+  if (!userId) {
+    throw new BadRequestError("User ID is missing");
   }
 
   if (data.body.length > 140) {
@@ -38,7 +51,7 @@ export async function handleChirpCreate(req: Request, res: Response) {
 
   const chirp = await createChirp({
     body: cleanedBody,
-    userId: data.userId,
+    userId: userId,
   });
 
   if (!chirp) {

@@ -3,15 +3,19 @@ import {
   ForbiddenError,
   InternalServerError,
   BadRequestError,
-  UnauthorizedError
+  UnauthorizedError,
 } from "../libs/errors.js";
 
-import { removeAllUsers, createUser, getUserByEmail } from "../libs/db/queries/users.js";
+import {
+  removeAllUsers,
+  createUser,
+  getUserByEmail,
+} from "../libs/db/queries/users.js";
 
 import { config, isPlatformDev } from "../config.js";
 
 import { respondWithJSON } from "../libs/json.js";
-import { checkPasswordHash } from "../libs/auth.js";
+import { checkPasswordHash, makeJWT } from "../libs/auth.js";
 
 export const handleUsersRemove = async (req: Request, res: Response) => {
   if (!isPlatformDev(config.app.platform)) {
@@ -56,6 +60,7 @@ export async function handleUserLogin(req: Request, res: Response) {
   type IncomeData = {
     email: string;
     password: string;
+    expiresInSeconds?: number;
   };
 
   const data: IncomeData = req.body;
@@ -74,11 +79,21 @@ export async function handleUserLogin(req: Request, res: Response) {
     throw new UnauthorizedError("Invalid email or password");
   }
 
-  if (!await checkPasswordHash(data.password, user.hashedPassword)) {
+  if (!(await checkPasswordHash(data.password, user.hashedPassword))) {
     throw new UnauthorizedError("Invalid email or password");
   }
 
+  const expiresInSeconds =
+    data.expiresInSeconds && data.expiresInSeconds < 3600
+      ? data.expiresInSeconds
+      : 3600;
+
+  const token = await makeJWT(user.id, expiresInSeconds, config.app.secret);
+
   const { hashedPassword, ...safeUser } = user;
 
-  respondWithJSON(res, 200, safeUser);
+  respondWithJSON(res, 200, {
+    ...safeUser,
+    token,
+  });
 }
