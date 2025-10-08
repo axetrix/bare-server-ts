@@ -22,6 +22,20 @@
       "when": 1759691663828,
       "tag": "0002_numerous_golden_guardian",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1759782732906,
+      "tag": "0003_clammy_joseph",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1759790525963,
+      "tag": "0004_robust_norrin_radd",
+      "breakpoints": true
     }
   ]
 }

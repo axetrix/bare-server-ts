@@ -126,4 +126,15 @@ describe("getBearerToken", () => {
     expect(getMock).toHaveBeenCalledTimes(1);
     expect(getMock).toHaveBeenCalledWith("Authorization");
   });
+
+  it("should extract the token even if there are extra parts", () => {
+    const getMock = vi.fn(() => "Bearer my-token1 my-token2");
+
+    const req = {
+      get: getMock
+    } as unknown as Request;
+
+    const token = getBearerToken(req);
+    expect(token).toBe("my-token1");
+  });
 });

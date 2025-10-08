@@ -9,5 +9,6 @@ export async function errorMiddleware(err: Error, _: Request, res: Response, __:
     return;
   }
 
+  console.error(err);
   respondWithError(res, 500, "Something went wrong on our end");
 }

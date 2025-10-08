@@ -1,7 +1,11 @@
 import type { Request } from "express";
+import type { JwtPayload } from "jsonwebtoken";
+
+import crypto from "crypto";
+
 import { hash, verify } from "argon2";
 import jsonwebtoken from "jsonwebtoken";
-import type { JwtPayload } from "jsonwebtoken";
+
 
 import { UserNotAuthenticatedError, AuthHeaderError } from "./errors.js";
 
@@ -78,4 +82,8 @@ export function getBearerToken(req: Request): string {
   }
 
   return token;
+}
+
+export function makeRefreshToken() {
+  return crypto.randomBytes(32).toString("hex");
 }

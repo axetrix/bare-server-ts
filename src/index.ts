@@ -7,7 +7,8 @@ import { middlewareFileServerHits } from "./middlewares/middlewareFileServerHits
 import { errorMiddleware } from "./middlewares/error-middleware.js";
 
 import { handleChirpCreate, handleGetAllChirps, handleGetChirp } from "./api/chirp.handler.js";
-import { handleUsersRemove, handleUserCreate, handleUserLogin } from "./api/users.handler.js";
+import { handleUsersRemove, handleUserCreate } from "./api/users.handler.js";
+import { handleUserLogin, handleRevokerToken, handleRefreshToken } from "./api/auth.handler.js";
 
 import { config } from './config.js';
 
@@ -41,6 +42,8 @@ app.get('/api/chirps/:id', handleGetChirp);
 
 app.post('/api/users', handleUserCreate);
 app.post('/api/login', handleUserLogin);
+app.post('/api/refresh', handleRefreshToken);
+app.post('/api/revoke', handleRevokerToken);
 app.post('/admin/reset', handleUsersRemove);
 
 
