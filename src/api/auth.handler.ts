@@ -5,28 +5,32 @@ import {
   UnauthorizedError,
 } from "../libs/errors.js";
 
-import {
-  getUserByEmail,
-} from "../libs/db/queries/users.js";
+import { getUserByEmail } from "../libs/db/queries/users.js";
 
 import {
   createRefreshToken,
   getRefreshToken,
   getRefreshTokenByUserId,
-  revokeRefreshToken
+  revokeRefreshToken,
 } from "../libs/db/queries/refresh-tokens.js";
 
 import { config } from "../config.js";
 
-import { respondWithJSON, json, status } from "../libs/json.js";
-import { checkPasswordHash, makeJWT, makeRefreshToken, getBearerToken, validateJWT } from "../libs/auth.js";
+import { respondWithJSON, addJsonHeaders, status } from "../libs/json.js";
+import {
+  checkPasswordHash,
+  makeJWT,
+  makeRefreshToken,
+  getBearerToken,
+} from "../libs/auth.js";
 import { RefreshToken } from "src/libs/db/schema.js";
 
 type LoginResponse = {
   id: string;
   email: string;
-  token: string,
+  token: string;
   refreshToken: string;
+  isChirpyRed: boolean;
 };
 
 export async function handleUserLogin(req: Request, res: Response) {
@@ -58,7 +62,11 @@ export async function handleUserLogin(req: Request, res: Response) {
   let refreshToken = await getRefreshTokenByUserId(user.id);
 
   if (!refreshToken) {
-    refreshToken = await createRefreshToken(makeRefreshToken(), user.id, 60 * 60 * 24);
+    refreshToken = await createRefreshToken(
+      makeRefreshToken(),
+      user.id,
+      60 * 60 * 24,
+    );
   }
 
   if (!refreshToken) {
@@ -67,18 +75,17 @@ export async function handleUserLogin(req: Request, res: Response) {
 
   const token = await makeJWT(user.id, 3600, config.app.secret);
 
-  const { hashedPassword, ...safeUser } = user;
-
   respondWithJSON(res, 200, {
-    id: safeUser.id,
-    email: safeUser.email,
+    id: user.id,
+    email: user.email,
+    isChirpyRed: user.isChirpyRed,
     token,
     refreshToken: refreshToken.token,
   } satisfies LoginResponse);
 }
 
 type RefreshResponse = {
-  token: string,
+  token: string;
 };
 
 export async function handleRefreshToken(req: Request, res: Response) {
@@ -113,7 +120,6 @@ export async function handleRefreshToken(req: Request, res: Response) {
   } satisfies RefreshResponse);
 }
 
-
 export async function handleRevokerToken(req: Request, res: Response) {
   let refreshToken: RefreshToken | undefined;
 
@@ -137,5 +143,5 @@ export async function handleRevokerToken(req: Request, res: Response) {
     throw new InternalServerError("Failed to revoke refresh token");
   }
 
-  status(json(res), 204).send();
+  status(addJsonHeaders(res), 204).send();
 }

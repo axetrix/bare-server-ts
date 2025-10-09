@@ -2,13 +2,9 @@ import { eq } from "drizzle-orm";
 
 import { db } from "../index.js";
 import { users } from "../schema.js";
-import type { User, UserSafe } from "../schema";
+import type { User, UserDTO } from "../schema";
 
-import { hashPassword } from "../../auth.js";
-
-export async function createUser(email: string, password: string): Promise<UserSafe | undefined> {
-  const hashedPassword = await hashPassword(password);
-
+export async function createUser(email: string, hashedPassword: string): Promise<User | undefined> {
   const [user] = await db
     .insert(users)
     .values({
@@ -16,12 +12,7 @@ export async function createUser(email: string, password: string): Promise<UserS
       hashedPassword,
     })
     .onConflictDoNothing()
-    .returning({
-      id: users.id,
-      email: users.email,
-      createdAt: users.createdAt,
-      updatedAt: users.updatedAt,
-    });
+    .returning();
 
   return user;
 }
@@ -36,6 +27,12 @@ export async function getUserByEmail(email: string): Promise<User | undefined> {
   return user;
 }
 
+export async function getUserById(id: string): Promise<User | undefined> {
+  const [user] = await db.select().from(users).where(eq(users.id, id)).execute();
+
+  return user;
+}
+
 export async function removeAllUsers(): Promise<boolean> {
   try {
     await db.delete(users).execute();
@@ -46,4 +43,36 @@ export async function removeAllUsers(): Promise<boolean> {
 
     return false;
   }
+}
+
+export async function updateUser(id: string, input: Partial<UserDTO>): Promise<User | undefined> {
+  const data: Partial<UserDTO> = {};
+
+  if (input.email) {
+    data.email = input.email;
+  }
+
+  if (input.hashedPassword) {
+    data.hashedPassword = input.hashedPassword;
+  }
+
+  const [user] = await db
+    .update(users)
+    .set(data)
+    .where(eq(users.id, id))
+    .returning();
+
+  return user;
+}
+
+export async function toUserChirpyRed(userId: string): Promise<User> {
+  const [user] = await db
+    .update(users)
+    .set({
+      isChirpyRed: true,
+    })
+    .where(eq(users.id, userId))
+    .returning();
+
+  return user;
 }

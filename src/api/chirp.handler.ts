@@ -1,9 +1,20 @@
 import { Request, Response } from "express";
-import { InternalServerError, BadRequestError, NotFoundError, UnauthorizedError } from "../libs/errors.js";
+import {
+  InternalServerError,
+  BadRequestError,
+  NotFoundError,
+  UnauthorizedError,
+  ForbiddenError,
+} from "../libs/errors.js";
 
-import { createChirp, getChirps, getChirpById } from "../libs/db/queries/chirps.js";
+import {
+  createChirp,
+  getChirps,
+  getChirpById,
+  deleteChirp,
+} from "../libs/db/queries/chirps.js";
 
-import { respondWithJSON } from "../libs/json.js";
+import { respondWithJSON, addJsonHeaders, status } from "../libs/json.js";
 import { getBearerToken, validateJWT } from "../libs/auth.js";
 import { config } from "../config.js";
 
@@ -25,9 +36,7 @@ export async function handleChirpCreate(req: Request, res: Response) {
   }
 
   if (!data.body) {
-    throw new BadRequestError(
-      `Provided data is invalid. Missing body`,
-    );
+    throw new BadRequestError(`Provided data is invalid. Missing body`);
   }
 
   if (!userId) {
@@ -61,7 +70,6 @@ export async function handleChirpCreate(req: Request, res: Response) {
   respondWithJSON(res, 201, chirp);
 }
 
-
 export async function handleGetAllChirps(req: Request, res: Response) {
   const chirps = await getChirps();
 
@@ -82,4 +90,42 @@ export async function handleGetChirp(req: Request, res: Response) {
   }
 
   respondWithJSON(res, 200, chirp);
+}
+
+export async function handleChirpDelete(req: Request, res: Response) {
+  const id = req.params.id;
+
+  if (!id) {
+    throw new BadRequestError(`Provided id is invalid`);
+  }
+
+  let userId;
+
+  try {
+    userId = await validateJWT(getBearerToken(req), config.app.secret);
+  } catch (error) {
+    throw new UnauthorizedError("Invalid token");
+  }
+
+  if (!userId) {
+    throw new UnauthorizedError("Invalid token, user not found");
+  }
+
+  const chirp = await getChirpById(id);
+
+  if (!chirp) {
+    throw new NotFoundError(`Chirp with id ${id} not found`);
+  }
+
+  if (chirp.userId !== userId) {
+    throw new ForbiddenError("User is not authorized to delete this chirp");
+  }
+
+  const isDeleted = await deleteChirp(id);
+
+  if (!isDeleted) {
+    throw new InternalServerError("Failed to delete chirp");
+  }
+
+  status(addJsonHeaders(res), 204).send();
 }

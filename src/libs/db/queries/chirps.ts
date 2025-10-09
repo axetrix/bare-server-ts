@@ -37,3 +37,15 @@ export async function getChirpById(id: string): Promise<Chirp | undefined> {
 
   return result;
 }
+
+export async function deleteChirp(id: string): Promise<boolean> {
+  try {
+    await db.delete(chirps).where(eq(chirps.id, id)).execute();
+
+    return true;
+  } catch (error) {
+    console.error("Error deleting chirp:", error);
+
+    return false;
+  }
+}
