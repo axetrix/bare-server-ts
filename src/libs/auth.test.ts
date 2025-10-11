@@ -1,5 +1,5 @@
 import type { Request } from "express";
-import { describe, it, expect, beforeAll, vi } from "vitest";
+import { describe, it, expect, beforeAll, vi, beforeEach } from "vitest";
 
 import { makeJWT, validateJWT } from "./auth";
 import { hashPassword, checkPasswordHash, getBearerToken } from "./auth";
@@ -90,7 +90,7 @@ describe("getBearerToken", () => {
 
   it("returns the token if header with many whithespaces is valid", () => {
     const getMock = vi.fn((key: string) =>
-      key === "Authorization" ? "Bearer    my-token1" : null
+      key === "Authorization" ? "Bearer    my-token1    " : null
     );
 
     const req = {

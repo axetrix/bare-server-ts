@@ -1,5 +1,7 @@
 import { pgTable, timestamp, varchar, uuid, text, boolean } from "drizzle-orm/pg-core";
 
+export type SortOrder = "asc" | "desc";
+
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   createdAt: timestamp("created_at").notNull().defaultNow(),

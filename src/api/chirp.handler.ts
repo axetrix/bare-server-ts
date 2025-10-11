@@ -17,6 +17,7 @@ import {
 import { respondWithJSON, addJsonHeaders, status } from "../libs/json.js";
 import { getBearerToken, validateJWT } from "../libs/auth.js";
 import { config } from "../config.js";
+import type { SortOrder } from "../libs/db/schema";
 
 const DISABLED_WORDS = ["kerfuffle", "sharbert", "fornax"];
 
@@ -71,7 +72,18 @@ export async function handleChirpCreate(req: Request, res: Response) {
 }
 
 export async function handleGetAllChirps(req: Request, res: Response) {
-  const chirps = await getChirps();
+  let authorId = "";
+  let sort: SortOrder = "asc";
+
+  if (typeof req.query.authorId === "string") {
+    authorId = req.query.authorId;
+  }
+
+  if (typeof req.query.sort === "string" && req.query.sort === "desc") {
+    sort = req.query.sort;
+  }
+
+  const chirps = await getChirps(authorId, sort);
 
   respondWithJSON(res, 200, chirps);
 }

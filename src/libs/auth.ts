@@ -68,20 +68,30 @@ export async function validateJWT(
   return decoded.sub;
 }
 
-export function getBearerToken(req: Request): string {
-  const authHeader = req.get("Authorization");
-
-  if (!authHeader) {
+function processToken(tokeName: string, header?: string): string {
+  if (!header) {
     throw new AuthHeaderError("No authorization header");
   }
 
-  const [type, token] = authHeader.split(/\s+/);
+  const [type, token] = header.split(/\s+/);
 
-  if (type !== "Bearer") {
+  if (type !== tokeName) {
     throw new AuthHeaderError("Invalid token type");
   }
 
-  return token;
+  return token.trim();
+}
+
+export function getBearerToken(req: Request): string {
+  const authHeader = req.get("Authorization");
+
+  return processToken("Bearer", authHeader);
+}
+
+export function getApiKeyFromRequest(req: Request): string {
+  const authHeader = req.get("Authorization");
+
+  return processToken("ApiKey", authHeader);
 }
 
 export function makeRefreshToken() {
